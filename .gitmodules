@@ -1,0 +1,6 @@
+[submodule "src/yp_sensors/Livox-SDK2"]
+	path = src/yp_sensors/Livox-SDK2
+	url = https://github.com/Livox-SDK/Livox-SDK2.git
+[submodule "src/yp_sensors/ws_livox/src/livox_ros_driver2"]
+	path = src/yp_sensors/ws_livox/src/livox_ros_driver2
+	url = https://github.com/Livox-SDK/livox_ros_driver2.git

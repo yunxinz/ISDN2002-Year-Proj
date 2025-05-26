@@ -1,0 +1,10 @@
+# Colcon output
+build
+log
+install
+
+# Visual Studio Code files
+.vscode
+
+# Python artifacts
+__pycache__/
