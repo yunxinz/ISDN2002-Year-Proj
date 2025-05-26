@@ -4,3 +4,6 @@
 [submodule "src/yp_sensors/ws_livox/src/livox_ros_driver2"]
 	path = src/yp_sensors/ws_livox/src/livox_ros_driver2
 	url = https://github.com/Livox-SDK/livox_ros_driver2.git
+[submodule "src/yp_localization/FAST_LIO_ROS2"]
+	path = src/yp_localization/FAST_LIO_ROS2
+	url = https://github.com/Ericsii/FAST_LIO_ROS2.git
