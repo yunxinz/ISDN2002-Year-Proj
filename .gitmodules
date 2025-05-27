@@ -7,3 +7,6 @@
 [submodule "src/yp_localization/FAST_LIO_ROS2"]
 	path = src/yp_localization/FAST_LIO_ROS2
 	url = https://github.com/Ericsii/FAST_LIO_ROS2.git
+[submodule "src/yp_sensors/octomap_server2"]
+	path = src/yp_sensors/octomap_server2
+	url = https://github.com/iKrishneel/octomap_server2.git
