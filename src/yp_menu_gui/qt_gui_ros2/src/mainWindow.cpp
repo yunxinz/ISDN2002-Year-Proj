@@ -52,7 +52,7 @@ MainWindow::MainWindow(
 
   // Add frame input box and button
   QLabel *frameLabel = new QLabel("Reference Frame:");
-  frameLineEdit_ = new QLineEdit("map");
+  frameLineEdit_ = new QLineEdit("camera_init");
   QPushButton *updateFrameButton = new QPushButton("Update Frame");
   connect(updateFrameButton, &QPushButton::clicked, this,
           &MainWindow::updateFrame);
@@ -130,7 +130,7 @@ void MainWindow::navigateToSelectedWaypoint() {
 
   // Create a goal for the navigation action
   auto goal_msg = nav2_msgs::action::NavigateToPose::Goal();
-  goal_msg.pose.header.frame_id = "map";
+  goal_msg.pose.header.frame_id = "camera_init";
   goal_msg.pose.header.stamp = rclcpp::Clock().now();
   goal_msg.pose.pose.position = waypoint.position;
   goal_msg.pose.pose.orientation = waypoint.orientation;
@@ -300,7 +300,7 @@ void MainWindow::setupMapDisplay() {
   map_display_ =
       manager_->createDisplay("rviz_default_plugins/Map", "Map Display", true);
   if (map_display_) {
-    map_display_->subProp("Topic")->setValue("/map");
+    map_display_->subProp("Topic")->setValue("/projected_map");
     map_display_->subProp("Alpha")->setValue(1.0);
     map_display_->subProp("Draw Behind")->setValue(false);
     map_display_->subProp("Color Scheme")->setValue("map");
@@ -410,7 +410,8 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 void MainWindow::setupMapSubscriber() {
   auto node = rviz_ros_node_.lock()->get_raw_node();
   mapSubscriber_ = node->create_subscription<nav_msgs::msg::OccupancyGrid>(
-      "/map", 10, [this](const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
+      "/projected_map", 10,
+      [this](const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
         Q_UNUSED(msg);
         mapReceived_ = true;
         qDebug() << "Map Received";
