@@ -8,7 +8,8 @@ colcon build --packages-select yp_bringup
  
 source /opt/ros/humble/setup.bash
 source /usr/share/gazebo/setup.sh
-source ~/ISDN2002-Year-Proj/install/setup.bash
+# source ~/ISDN2002-Year-Proj/install/setup.bash
+source install/setup.bash
 # source install/setup.bash
 export TURTLEBOT3_MODEL=waffle  
 export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/humble/share/turtlebot3_gazebo/models
