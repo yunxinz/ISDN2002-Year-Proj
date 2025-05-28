@@ -1,0 +1,27 @@
+ekf_filter_node:
+    ros__parameters:
+        frequency: 30.0
+        odom0: /Odometry_fixed
+        odom0_config:
+            [
+                true,
+                true,
+                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+            ]
+        base_link_frame: base_footprint
+        odom_frame: odom
+        world_frame: odom
+        publish_tf: true
+        use_control: false

@@ -68,6 +68,28 @@ def generate_launch_description():
                   ('/tf_static', 'tf_static')]
 
     # Declare the launch arguments
+
+    lidar_to_camera_tf_cmd = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='lidar_to_camera_tf',
+        arguments=['0', '0', '0', '0', '0', '0', 'livox_frame', 'camera_init'],
+        output='screen')
+
+    camera_to_map_tf_cmd = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='camera_to_map_tf',
+        arguments=['0', '0', '0', '0', '0', '0', 'camera_init', 'map'],
+        output='screen')
+
+    dynamic_lidar_tf_cmd = Node(
+        package='yp_bringup',  
+        executable='dynamic_lidar_tf_publisher.py',  
+        name='dynamic_lidar_tf_publisher',
+        output='screen'
+    )
+
     declare_namespace_cmd = DeclareLaunchArgument(
         'namespace',
         default_value='',
@@ -80,7 +102,7 @@ def generate_launch_description():
 
     declare_slam_cmd = DeclareLaunchArgument(
         'slam',
-        default_value='False',
+        default_value='True',
         description='Whether run a SLAM')
 
     declare_map_yaml_cmd = DeclareLaunchArgument(
@@ -91,7 +113,7 @@ def generate_launch_description():
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
-        default_value='true',
+        default_value='False',
         description='Use simulation (Gazebo) clock if true')
 
     declare_params_file_cmd = DeclareLaunchArgument(
@@ -100,7 +122,7 @@ def generate_launch_description():
         description='Full path to the ROS2 parameters file to use for all launched nodes')
 
     declare_autostart_cmd = DeclareLaunchArgument(
-        'autostart', default_value='true',
+        'autostart', default_value='True',
         description='Automatically startup the nav2 stack')
 
     declare_use_composition_cmd = DeclareLaunchArgument(
@@ -134,7 +156,7 @@ def generate_launch_description():
 
     declare_simulator_cmd = DeclareLaunchArgument(
         'headless',
-        default_value='True',
+        default_value='False',
         description='Whether to execute gzclient)')
 
     declare_world_cmd = DeclareLaunchArgument(
@@ -157,43 +179,46 @@ def generate_launch_description():
         description='Full path to robot sdf file to spawn the robot in gazebo')
 
     # Specify the actions
-    start_gazebo_server_cmd = ExecuteProcess(
-        condition=IfCondition(use_simulator),
-        cmd=['gzserver', '-s', 'libgazebo_ros_init.so',
-             '-s', 'libgazebo_ros_factory.so', world],
-        cwd=[launch_dir], output='screen')
+    # start_gazebo_server_cmd = ExecuteProcess(
+    #     condition=IfCondition(use_simulator),
+    #     cmd=['gzserver', '-s', 'libgazebo_ros_init.so',
+    #          '-s', 'libgazebo_ros_factory.so', world],
+    #     cwd=[launch_dir], output='screen')
 
-    start_gazebo_client_cmd = ExecuteProcess(
-        condition=IfCondition(PythonExpression(
-            [use_simulator, ' and not ', headless])),
-        cmd=['gzclient'],
-        cwd=[launch_dir], output='screen')
+    # start_gazebo_client_cmd = ExecuteProcess(
+    #     condition=IfCondition(PythonExpression(
+    #         [use_simulator, ' and not ', headless])),
+    #     cmd=['gzclient'],
+    #     cwd=[launch_dir], output='screen')
 
     urdf = os.path.join(bringup_dir, 'urdf', 'turtlebot3_waffle.urdf')
+    if not os.path.exists(urdf):
+        print(f"URDF file not found: {urdf}")
     with open(urdf, 'r') as infp:
         robot_description = infp.read()
 
     start_robot_state_publisher_cmd = Node(
-        condition=IfCondition(use_robot_state_pub),
+        # Remove the IfCondition to always run robot_state_publisher for debugging
+        # condition=IfCondition(use_robot_state_pub),
         package='robot_state_publisher',
         executable='robot_state_publisher',
         name='robot_state_publisher',
-        namespace=namespace,
+        # namespace=namespace,  # Remove namespace to avoid TF nesting issues
         output='screen',
         parameters=[{'use_sim_time': use_sim_time,
                      'robot_description': robot_description}],
         remappings=remappings)
 
-    start_gazebo_spawner_cmd = Node(
-        package='gazebo_ros',
-        executable='spawn_entity.py',
-        output='screen',
-        arguments=[
-            '-entity', robot_name,
-            '-file', robot_sdf,
-            '-robot_namespace', namespace,
-            '-x', pose['x'], '-y', pose['y'], '-z', pose['z'],
-            '-R', pose['R'], '-P', pose['P'], '-Y', pose['Y']])
+    # start_gazebo_spawner_cmd = Node(
+    #     package='gazebo_ros',
+    #     executable='spawn_entity.py',
+    #     output='screen',
+    #     arguments=[
+    #         '-entity', robot_name,
+    #         '-file', robot_sdf,
+    #         '-robot_namespace', namespace,
+    #         '-x', pose['x'], '-y', pose['y'], '-z', pose['z'],
+    #         '-R', pose['R'], '-P', pose['P'], '-Y', pose['Y']])
 
     rviz_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -216,6 +241,73 @@ def generate_launch_description():
                           'use_composition': use_composition,
                           'use_respawn': use_respawn}.items())
 
+    # Add joint_state_publisher to publish fake wheel joint states
+    joint_state_publisher_cmd = Node(
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        name='joint_state_publisher',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}]
+    )
+
+    ekf_node = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        parameters=[os.path.join(bringup_dir, 'config', 'ekf.yaml')],
+    )
+
+    odom_remap_node = Node(
+        package='yp_bringup',
+        executable='odometry_frame_remap.py',
+        name='odometry_frame_remap',
+        output='screen'
+    )
+
+
+    base_link_to_base_footprint_tf_cmd = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='base_link_to_base_footprint_tf',
+        arguments=['0', '0', '0', '0', '0',
+                   '0', 'base_footprint', 'base_link'],
+        output='screen'
+    )
+
+    amcl_node = Node(
+        package='nav2_amcl',
+        executable='amcl',
+        name='amcl',
+        output='screen',
+        parameters=[params_file]
+    )
+
+    pointcloud_to_laserscan_node = Node(
+        package='pointcloud_to_laserscan',
+        executable='pointcloud_to_laserscan_node',
+        name='pointcloud_to_laserscan',
+        output='screen',
+        parameters=[{
+            'target_frame': 'base_footprint',
+            'transform_tolerance': 0.01,
+            'min_height': -1.0,
+            'max_height': 1.0,
+            'angle_min': -3.14,
+            'angle_max': 3.14,
+            'angle_increment': 0.0087,
+            'scan_time': 0.1,
+            'range_min': 0.1,
+            'range_max': 30.0,
+            'use_inf': True,
+            'inf_epsilon': 1.0
+        }],
+        remappings=[
+            ('cloud_in', '/cloud_registered'),
+            ('scan', '/scan')
+        ]
+    )
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -228,7 +320,6 @@ def generate_launch_description():
     ld.add_action(declare_params_file_cmd)
     ld.add_action(declare_autostart_cmd)
     ld.add_action(declare_use_composition_cmd)
-
     ld.add_action(declare_rviz_config_file_cmd)
     ld.add_action(declare_use_simulator_cmd)
     ld.add_action(declare_use_robot_state_pub_cmd)
@@ -239,14 +330,19 @@ def generate_launch_description():
     ld.add_action(declare_robot_sdf_cmd)
     ld.add_action(declare_use_respawn_cmd)
 
-    # Add any conditioned actions
-    ld.add_action(start_gazebo_server_cmd)
-    ld.add_action(start_gazebo_client_cmd)
-    ld.add_action(start_gazebo_spawner_cmd)
-
     # Add the actions to launch all of the navigation nodes
     ld.add_action(start_robot_state_publisher_cmd)
-    ld.add_action(rviz_cmd)
+    ld.add_action(joint_state_publisher_cmd)
+    ld.add_action(odom_remap_node)
+    # <--- re-enable this line
+    ld.add_action(base_link_to_base_footprint_tf_cmd)
+    ld.add_action(amcl_node)
+    ld.add_action(pointcloud_to_laserscan_node)
+    ld.add_action(lidar_to_camera_tf_cmd)
+    ld.add_action(camera_to_map_tf_cmd)
+    ld.add_action(ekf_node)
     ld.add_action(bringup_cmd)
+    ld.add_action(rviz_cmd)
+    ld.add_action(dynamic_lidar_tf_cmd)
 
     return ld
