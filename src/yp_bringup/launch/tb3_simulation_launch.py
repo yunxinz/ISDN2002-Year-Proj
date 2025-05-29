@@ -84,8 +84,8 @@ def generate_launch_description():
         output='screen')
 
     dynamic_lidar_tf_cmd = Node(
-        package='yp_bringup',  
-        executable='dynamic_lidar_tf_publisher.py',  
+        package='yp_bringup',
+        executable='dynamic_lidar_tf_publisher.py',
         name='dynamic_lidar_tf_publisher',
         output='screen'
     )
@@ -224,9 +224,12 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             os.path.join(launch_dir, 'rviz_launch.py')),
         condition=IfCondition(use_rviz),
-        launch_arguments={'namespace': namespace,
-                          'use_namespace': use_namespace,
-                          'rviz_config': rviz_config_file}.items())
+        launch_arguments={
+            'namespace': namespace,
+            'use_namespace': use_namespace,
+            'rviz_config': rviz_config_file,
+            'use_sim_time': use_sim_time  # Ensure RViz uses the same sim time
+        }.items())
 
     bringup_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -265,7 +268,6 @@ def generate_launch_description():
         output='screen'
     )
 
-
     base_link_to_base_footprint_tf_cmd = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
@@ -279,8 +281,9 @@ def generate_launch_description():
         package='nav2_amcl',
         executable='amcl',
         name='amcl',
+        namespace='',  # Ensure AMCL is in the global namespace
         output='screen',
-        parameters=[params_file]
+        parameters=[params_file, {'use_sim_time': use_sim_time}]
     )
 
     pointcloud_to_laserscan_node = Node(
