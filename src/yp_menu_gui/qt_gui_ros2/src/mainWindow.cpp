@@ -191,11 +191,15 @@ void MainWindow::stopNavigation() {
 void MainWindow::loadWaypoints() {
   // NOTE - add waypoints here
   //  consider load from external file later
-  waypoints_ = {{"Waypoint 1", create_point(1.0, 2.0, 0.0),
+  waypoints_ = {{"Start Point", create_point(0.0, 0.0, 0.0),
                  create_quaternion(0.0, 0.0, 0.0, 1.0)},
-                {"Waypoint 2", create_point(0.5, -1.5, 0.0),
+                {"Before Door Entry", create_point(3.31, -0.224, 0.0919),
                  create_quaternion(0.0, 0.0, 0.0, 1.0)},
-                {"Waypoint 3", create_point(-1.5, -0.5, 0.0),
+                {"At Door Entry", create_point(4.24, -0.3, 0.0919),
+                 create_quaternion(0.0, 0.0, 0.0, 1.0)},
+                {"Enters 4223", create_point(5.36, 2.88, 0.0382),
+                 create_quaternion(0.0, 0.0, 0.0, 1.0)},
+                {"Enters Present Area", create_point(6.38, 3.92, 0.205),
                  create_quaternion(0.0, 0.0, 0.0, 1.0)}};
 
   for (const auto &waypoint : waypoints_) {
